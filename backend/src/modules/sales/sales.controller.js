@@ -35,11 +35,7 @@ export const createSale = async (req, res) => {
     // -------------------------------
     // 3️⃣ VALIDATE SHOP
     // -------------------------------
-    const shop = await Shop.findOne({
-      _id: shopId,
-      isActive: true,
-    });
-
+    const shop = await Shop.findOne({ _id: shopId, isActive: true });
     if (!shop) {
       return res.status(400).json({ message: "Shop not found or inactive" });
     }
@@ -70,7 +66,7 @@ export const createSale = async (req, res) => {
         });
       }
 
-      // ITEM vs KG rule
+      // ITEM vs KG validation
       if (product.priceType === "ITEM" && !Number.isInteger(quantity)) {
         return res.status(400).json({
           message: `${product.name} quantity must be an integer`,
@@ -101,35 +97,30 @@ export const createSale = async (req, res) => {
     // -------------------------------
     // 6️⃣ CREATE SALE ITEMS
     // -------------------------------
-    const itemsToInsert = saleItems.map((item) => ({
-      ...item,
-      saleId: sale._id,
-    }));
-
-    await SaleItem.insertMany(itemsToInsert);
+    await SaleItem.insertMany(
+      saleItems.map((item) => ({
+        ...item,
+        saleId: sale._id,
+      }))
+    );
 
     // -------------------------------
-    // 7️⃣ AUDIT LOG (✅ CORRECT PLACE)
+    // 7️⃣ AUDIT LOG
     // -------------------------------
     await logAudit({
       action: "CREATE_SALE",
       entity: "SALE",
       entityId: sale._id,
       performedBy: req.user.id,
-      meta: {
-        totalAmount,
-        saleDate,
-        shopId,
-      },
+      meta: { totalAmount, saleDate, shopId },
     });
 
     // -------------------------------
-    // 8️⃣ RESPONSE
+    // 8️⃣ FINAL RESPONSE (🔥 FIXED)
     // -------------------------------
     return res.status(201).json({
-      message: "Sale created successfully",
       saleId: sale._id,
-      totalAmount,
+      totalAmount, // 👈 MOBILE WILL ALWAYS GET THIS
     });
   } catch (error) {
     console.error("CREATE SALE ERROR:", error);
