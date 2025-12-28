@@ -7,7 +7,7 @@ import {
     Alert,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
 import { getProducts } from "../../../services/product.service";
 import { submitSaleSafe } from "../../../services/sync.service";
 
@@ -90,30 +90,33 @@ export default function SalesScreen() {
 
             const res = await submitSaleSafe(payload);
 
-            if (res?.offline) {
-                Alert.alert(
-                    "Saved Offline",
-                    "Sale saved locally and will sync automatically"
-                );
-            } else {
-                const total =
-                    res?.totalAmount ??
-                    res?.data?.totalAmount ??
-                    0;
+            const total =
+                res?.totalAmount ??
+                res?.data?.totalAmount ??
+                0;
 
-                Alert.alert(
-                    "Sale Added ✅",
-                    `Total Amount: ₹${total}`
-                );
-            }
-
+            // ✅ CLEAR CART FIRST
             setCart({});
+
+            // ✅ NAVIGATE FIRST (THIS IS THE KEY FIX)
+            router.replace("/shops");
+
+            // ✅ SHOW MESSAGE AFTER NAVIGATION (SAFE)
+            setTimeout(() => {
+                Alert.alert(
+                    res?.offline ? "Saved Offline" : "Sale Added ✅",
+                    res?.offline
+                        ? "Sale saved locally and will sync automatically"
+                        : `Total Amount: ₹${total}`
+                );
+            }, 300);
         } catch (error) {
             Alert.alert("Error", "Sale failed");
         } finally {
             setLoading(false);
         }
     };
+
 
     // -------------------------------
     // UI
