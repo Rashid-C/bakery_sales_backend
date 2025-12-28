@@ -1,31 +1,57 @@
+import { Platform, Alert } from "react-native";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export const downloadFile = async (
-    url: string,
-    filename: string
+  url: string,
+  filename: string
 ) => {
-    const token = await AsyncStorage.getItem("token");
-    if (!token) throw new Error("No token");
-
-    const response = await fetch(url, {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error("Download failed");
+  try {
+    // 🌐 WEB
+    if (Platform.OS === "web") {
+      window.open(url, "_blank");
+      return;
     }
 
-    const blob = await response.blob();
-    const blobUrl = window.URL.createObjectURL(blob);
+    // 📱 MOBILE
+    const token = await AsyncStorage.getItem("token");
+    if (!token) {
+      Alert.alert("Error", "Not authenticated");
+      return;
+    }
 
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    // ✅ SAFE DIRECTORY
+    const directory = FileSystem.cacheDirectory;
+    if (!directory) {
+      Alert.alert("Error", "File system unavailable");
+      return;
+    }
 
-    window.URL.revokeObjectURL(blobUrl);
+    const fileUri = directory + filename;
+
+    const downloadResult = await FileSystem.downloadAsync(
+      url,
+      fileUri,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    const canShare = await Sharing.isAvailableAsync();
+    if (!canShare) {
+      Alert.alert(
+        "Downloaded",
+        `File saved at:\n${downloadResult.uri}`
+      );
+      return;
+    }
+
+    await Sharing.shareAsync(downloadResult.uri);
+  } catch (error) {
+    console.error("DOWNLOAD ERROR:", error);
+    Alert.alert("Error", "Download failed");
+  }
 };
