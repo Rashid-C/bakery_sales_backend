@@ -60,3 +60,39 @@ export const createUser = async (req, res) => {
         });
     }
 };
+
+// ADMIN — List all users
+export const getUsers = async (req, res) => {
+    const users = await User.find()
+        .select("name username role isActive createdAt")
+        .sort({ createdAt: -1 });
+
+    res.json(users);
+};
+
+
+// ADMIN — Block / Unblock user
+export const toggleUserStatus = async (req, res) => {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    user.isActive = !user.isActive;
+    await user.save();
+
+    await logAudit({
+        action: user.isActive ? "UNBLOCK_USER" : "BLOCK_USER",
+        entity: "USER",
+        entityId: user._id,
+        performedBy: req.user.id,
+    });
+
+    res.json({
+        message: `User ${user.isActive ? "unblocked" : "blocked"}`,
+    });
+};
+
+

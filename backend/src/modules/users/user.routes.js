@@ -2,6 +2,8 @@ import express from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/role.middleware.js";
 import { createUser } from "./user.controller.js";
+import { getUsers } from "./user.controller.js";
+import { toggleUserStatus } from "./user.controller.js";
 
 const router = express.Router();
 
@@ -43,6 +45,20 @@ router.get(
             user: req.user,
         });
     }
+);
+
+router.get(
+    "/",
+    authMiddleware,
+    requireRole("ADMIN"),
+    getUsers
+);
+
+router.patch(
+    "/:id/toggle",
+    authMiddleware,
+    requireRole("ADMIN"),
+    toggleUserStatus
 );
 
 export default router;
