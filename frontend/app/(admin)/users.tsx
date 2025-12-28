@@ -5,6 +5,7 @@ import {
     toggleUserStatus,
 } from "../../services/user.service";
 import { router } from "expo-router";
+import { logout } from "../../services/auth.service";
 
 
 export default function AdminUsersScreen() {
@@ -37,7 +38,7 @@ export default function AdminUsersScreen() {
             <Text style={{ fontSize: 18, marginBottom: 10 }}>
                 Manage Users
             </Text>
-
+            <Button title="Logout" onPress={logout} />
             <Button
                 title="➕ Create User"
                 onPress={() => router.push("/create-user")

@@ -2,23 +2,25 @@ import { View, Text, FlatList, TouchableOpacity, Image } from "react-native";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import { getShops } from "../../services/shop.service";
+import { Button } from "react-native";
+import { logout } from "../../services/auth.service";
 
 export default function ShopsScreen() {
   const [shops, setShops] = useState([]);
 
-useEffect(() => {
-  const loadShops = async () => {
-    try {
-      const data = await getShops();
-      console.log("SHOPS RESPONSE:", data);
-      setShops(data);
-    } catch (err) {
-      console.log("SHOP API ERROR:", err);
-    }
-  };
+  useEffect(() => {
+    const loadShops = async () => {
+      try {
+        const data = await getShops();
+        console.log("SHOPS RESPONSE:", data);
+        setShops(data);
+      } catch (err) {
+        console.log("SHOP API ERROR:", err);
+      }
+    };
 
-  loadShops();
-}, []);
+    loadShops();
+  }, []);
 
 
   const renderItem = ({ item }: any) => (
@@ -47,6 +49,7 @@ useEffect(() => {
       <Text style={{ fontSize: 18, marginBottom: 10 }}>
         Select Shop
       </Text>
+      <Button title="Logout" onPress={logout} />
 
       <FlatList
         data={shops}
