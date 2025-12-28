@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema(
             trim: true,
         },
         username: {
-            type: String,
+            type: String, // email or mobile
             required: true,
             unique: true,
             index: true,
@@ -20,15 +20,15 @@ const userSchema = new mongoose.Schema(
         role: {
             type: String,
             enum: ["ADMIN", "EMPLOYEE"],
+            default: "EMPLOYEE",
             required: true,
         },
         isActive: {
             type: Boolean,
             default: true,
         },
-
     },
     { timestamps: true }
-)
+);
 
-export default mongoose.model("User", userSchema)
+export default mongoose.model("User", userSchema);

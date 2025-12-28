@@ -1,10 +1,23 @@
 import express from "express";
 import { authMiddleware } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/role.middleware.js";
+import { createUser } from "./user.controller.js";
 
 const router = express.Router();
 
+// ------------------------------------
+// ADMIN — Create User (Employee/Admin)
+// ------------------------------------
+router.post(
+    "/",
+    authMiddleware,
+    requireRole("ADMIN"),
+    createUser
+);
+
+// ------------------------------------
 // Admin-only test route
+// ------------------------------------
 router.get(
     "/admin-test",
     authMiddleware,
@@ -17,7 +30,9 @@ router.get(
     }
 );
 
+// ------------------------------------
 // Employee-only test route
+// ------------------------------------
 router.get(
     "/employee-test",
     authMiddleware,
