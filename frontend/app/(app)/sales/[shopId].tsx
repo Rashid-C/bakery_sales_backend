@@ -9,23 +9,33 @@ import {
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { getProducts } from "../../../services/product.service";
-import { createSale } from "../../../services/sale.service";
+import { submitSaleSafe } from "../../../services/sync.service";
 
 export default function SalesScreen() {
-    const { shopId } = useLocalSearchParams<{ shopId: string }>();
+    // 🔐 SAFE PARAM HANDLING
+    const params = useLocalSearchParams();
+    const shopId = Array.isArray(params.shopId)
+        ? params.shopId[0]
+        : params.shopId;
 
     const [products, setProducts] = useState<any[]>([]);
     const [cart, setCart] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(false);
 
-    // Load products
+    // -------------------------------
+    // LOAD PRODUCTS
+    // -------------------------------
     useEffect(() => {
         getProducts()
             .then(setProducts)
-            .catch(() => Alert.alert("Error", "Failed to load products"));
+            .catch(() =>
+                Alert.alert("Error", "Failed to load products")
+            );
     }, []);
 
-    // Increase quantity
+    // -------------------------------
+    // INCREASE QUANTITY
+    // -------------------------------
     const increase = (id: string) => {
         setCart((prev) => ({
             ...prev,
@@ -33,7 +43,9 @@ export default function SalesScreen() {
         }));
     };
 
-    // Decrease quantity
+    // -------------------------------
+    // DECREASE QUANTITY
+    // -------------------------------
     const decrease = (id: string) => {
         setCart((prev) => {
             const qty = (prev[id] || 0) - 1;
@@ -46,48 +58,71 @@ export default function SalesScreen() {
         });
     };
 
-    // Submit sale
+    // -------------------------------
+    // SUBMIT SALE (ONLINE + OFFLINE)
+    // -------------------------------
     const submitSale = async () => {
-        const items = Object.entries(cart).map(([productId, quantity]) => ({
-            productId,
-            quantity,
-        }));
-
-        if (items.length === 0) {
-            Alert.alert("No items", "Please add at least one product");
+        if (!shopId) {
+            Alert.alert("Error", "Invalid shop selected");
             return;
         }
+
+        const items = Object.entries(cart).map(
+            ([productId, quantity]) => ({
+                productId,
+                quantity,
+            })
+        );
+
+        if (items.length === 0) {
+            Alert.alert("No items", "Please add products");
+            return;
+        }
+
+        const payload = {
+            shopId,
+            saleDate: new Date().toISOString().split("T")[0],
+            items,
+        };
 
         try {
             setLoading(true);
 
-            const saleDate = new Date().toISOString().split("T")[0];
+            const res = await submitSaleSafe(payload);
 
-            const res = await createSale({
-                shopId,
-                saleDate,
-                items,
-            });
+            if (res?.offline) {
+                Alert.alert(
+                    "Saved Offline",
+                    "Sale saved locally and will sync automatically"
+                );
+            } else {
+                const total =
+                    res?.totalAmount ??
+                    res?.data?.totalAmount ??
+                    0;
 
-            Alert.alert(
-                "Sale Added ✅",
-                `Total Amount: ₹${res.totalAmount}`
-            );
+                Alert.alert(
+                    "Sale Added ✅",
+                    `Total Amount: ₹${total}`
+                );
+            }
 
             setCart({});
-        } catch (err: any) {
-            Alert.alert(
-                "Error",
-                err?.response?.data?.message || "Failed to add sale"
-            );
+        } catch (error) {
+            Alert.alert("Error", "Sale failed");
         } finally {
             setLoading(false);
         }
     };
 
+    // -------------------------------
+    // UI
+    // -------------------------------
     return (
         <View style={{ padding: 20 }}>
-            <Text style={{ fontSize: 18, marginBottom: 10 }}>Add Sale</Text>
+            <Text style={{ fontSize: 18, marginBottom: 10 }}>
+                Add Sale
+            </Text>
 
             <FlatList
                 data={products}
@@ -105,15 +140,38 @@ export default function SalesScreen() {
                             {item.name} ({item.priceType})
                         </Text>
 
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <TouchableOpacity onPress={() => decrease(item._id)}>
-                                <Text style={{ fontSize: 20, marginHorizontal: 10 }}>−</Text>
+                        <View
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                            }}
+                        >
+                            <TouchableOpacity
+                                onPress={() => decrease(item._id)}
+                            >
+                                <Text
+                                    style={{
+                                        fontSize: 20,
+                                        marginHorizontal: 10,
+                                    }}
+                                >
+                                    −
+                                </Text>
                             </TouchableOpacity>
 
                             <Text>{cart[item._id] || 0}</Text>
 
-                            <TouchableOpacity onPress={() => increase(item._id)}>
-                                <Text style={{ fontSize: 20, marginHorizontal: 10 }}>+</Text>
+                            <TouchableOpacity
+                                onPress={() => increase(item._id)}
+                            >
+                                <Text
+                                    style={{
+                                        fontSize: 20,
+                                        marginHorizontal: 10,
+                                    }}
+                                >
+                                    +
+                                </Text>
                             </TouchableOpacity>
                         </View>
                     </View>

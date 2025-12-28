@@ -115,12 +115,10 @@ export const createSale = async (req, res) => {
       meta: { totalAmount, saleDate, shopId },
     });
 
-    // -------------------------------
-    // 8️⃣ FINAL RESPONSE (🔥 FIXED)
-    // -------------------------------
+  
     return res.status(201).json({
       saleId: sale._id,
-      totalAmount, // 👈 MOBILE WILL ALWAYS GET THIS
+      totalAmount,
     });
   } catch (error) {
     console.error("CREATE SALE ERROR:", error);
